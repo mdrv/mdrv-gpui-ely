@@ -2,8 +2,7 @@ use std::f32::consts::FRAC_PI_4;
 
 use ely_gpui_component::{
     Assets,
-    files::FileIcon,
-    primitives::{FocusScope, Icon, IconName, IconTheme},
+    primitives::{FocusScope, Icon, IconName, IconTheme, file_icon},
     theme::{ActiveTheme, IconSize},
 };
 use gpui::{
@@ -18,12 +17,12 @@ struct Icons {
 impl Render for Icons {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme();
-        let file = |name: &'static str| {
+        let file = |name: &'static str, cx: &App| {
             div()
                 .flex()
                 .items_center()
                 .gap_2()
-                .child(FileIcon::file(name))
+                .child(Icon::new(file_icon(name, cx)))
                 .child(name)
         };
         FocusScope::new(&self.focus)
@@ -50,9 +49,9 @@ impl Render for Icons {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .child(file("main.rs"))
-                    .child(file("Cargo.toml"))
-                    .child(file("notes.txt")),
+                    .child(file("main.rs", cx))
+                    .child(file("Cargo.toml", cx))
+                    .child(file("notes.txt", cx)),
             )
     }
 }

@@ -2,19 +2,19 @@ use std::rc::Rc;
 
 use gpui::ColorExt as _;
 use gpui::{
-    black, canvas, div, linear_color_stop, linear_gradient, prelude::*, relative, white,
     AnyElement, App, Bounds, Context, DragMoveEvent, ElementId, EmptyView, Entity, EntityId, Hsla,
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
-    StatefulInteractiveElement, Styled, Subscription, Window,
+    StatefulInteractiveElement, Styled, Subscription, Window, black, canvas, div,
+    linear_color_stop, linear_gradient, prelude::*, relative, white,
 };
 use palette::IntoColor as _;
 
 use super::{
     super::{InputEvent, TextInput},
-    fields::{format_select, typed_fields, Commit, Format, SetFormat},
+    ColorSwatch, EyeDropper, Hsva,
+    fields::{Commit, Format, SetFormat, format_select, typed_fields},
     hex, parse_hex,
     swatch::checker,
-    ColorSwatch, EyeDropper, Hsva,
 };
 use crate::theme::{ActiveTheme, ControlSize, Elevation, Radius};
 
@@ -388,9 +388,9 @@ impl RenderOnce for ColorPicker {
 
 #[cfg(test)]
 mod tests {
-    use gpui::{point, px, size, Bounds};
+    use gpui::{Bounds, point, px, size};
 
-    use super::{pointed, Area, Hsva};
+    use super::{Area, Hsva, pointed};
 
     #[test]
     fn pointing_sets_the_part_under_the_pointer() {

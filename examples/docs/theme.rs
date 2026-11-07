@@ -7,7 +7,7 @@ use ely_gpui_component::{
 };
 use gpui::{
     App, AppContext, Context, FocusHandle, IntoElement, ParentElement, Render, Styled, Window,
-    WindowOptions, div, rgb,
+    WindowOptions, div, rgb, rgb_to_hsla,
 };
 
 struct Tokens {
@@ -80,7 +80,7 @@ impl Render for Tokens {
             .child(Button::new("accent", "Green accent").on_click(|_, _, cx| {
                 let mode = cx.theme().mode();
                 let mut palette = cx.theme().palette();
-                *palette.token_mut("accent") = rgb(0x2f7d4f).into();
+                *palette.token_mut("accent") = rgb_to_hsla(rgb(0x2f7d4f));
                 Theme::set_palette(mode, Some(palette), cx);
             }));
         FocusScope::new(&self.focus)

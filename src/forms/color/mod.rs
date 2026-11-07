@@ -104,7 +104,7 @@ pub(crate) fn hex(rgba: Rgba) -> String {
 mod tests {
     use gpui::Rgba;
 
-    use super::{hex, parse_hex, Hsva};
+    use super::{Hsva, hex, parse_hex};
 
     fn close(a: Rgba, b: Rgba) -> bool {
         [
@@ -125,26 +125,10 @@ mod tests {
             v: 1.0,
             a: 1.0,
         };
-        assert!(close(
-            orange.to_rgba(),
-            Rgba {
-                r: 1.0,
-                g: 0.5,
-                b: 0.0,
-                a: 1.0
-            }
-        ));
+        assert!(close(orange.to_rgba(), Rgba::new(1.0, 0.5, 0.0, 1.0)));
         let back = Hsva::from_rgba(orange.to_rgba(), 0.0);
         assert!((back.h - 30.0).abs() < 1e-3 && (back.s - 1.0).abs() < 1e-4);
-        let gray = Hsva::from_rgba(
-            Rgba {
-                r: 0.5,
-                g: 0.5,
-                b: 0.5,
-                a: 1.0,
-            },
-            210.0,
-        );
+        let gray = Hsva::from_rgba(Rgba::new(0.5, 0.5, 0.5, 1.0), 210.0);
         assert_eq!((gray.h, gray.s), (210.0, 0.0));
     }
 

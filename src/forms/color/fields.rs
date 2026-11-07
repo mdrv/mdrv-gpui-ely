@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use gpui::{div, App, Div, ElementId, Entity, ParentElement, SharedString, Styled, Window};
+use gpui::{App, Div, ElementId, Entity, ParentElement, SharedString, Styled, Window, div};
 
 use super::{
     super::{Choice, Input, ScrubInput, Select, TextInput},

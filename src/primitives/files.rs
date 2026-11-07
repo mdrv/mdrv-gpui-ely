@@ -56,7 +56,7 @@ pub(crate) fn icon_theme(cx: &App) -> &IconTheme {
 }
 
 /// The icon a file's name suggests, under the owner's icon theme.
-pub(crate) fn file_icon(name: &str, cx: &App) -> IconName {
+pub fn file_icon(name: &str, cx: &App) -> IconName {
     icon_theme(cx).file(name)
 }
 

@@ -58,6 +58,7 @@ rustix = { version = "1", default-features = false, features = ["std", "fs"] }
 
 [dev-dependencies]
 env_logger = "0.11"
+gpui_platform = { package = "mdrv-gpui-platform", path = "/g/mdrv-gpui/crates/gpui_platform" }
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 js-sys = "0.3"

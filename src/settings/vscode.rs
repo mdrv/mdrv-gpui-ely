@@ -272,7 +272,7 @@ pub fn read_vscode_theme(text: &str) -> Result<VsCodeTheme> {
 
 #[cfg(test)]
 mod tests {
-    use gpui::{rgb, rgba};
+    use gpui::{rgb, rgb_to_hsla, rgba};
 
     use super::{plain, read_vscode_theme};
     use crate::theme::{Mode, Palette};
@@ -317,7 +317,7 @@ mod tests {
         let theme =
             read_vscode_theme(r##"{"type": "dark", "colors": {"widget.shadow": "#0008"}}"##)
                 .expect("a theme");
-        assert_eq!(theme.colors.shadow, rgba(0x00000088).into());
+        assert_eq!(theme.colors.shadow, rgb_to_hsla(rgba(0x00000088)));
     }
 
     #[test]
@@ -325,7 +325,7 @@ mod tests {
         let theme =
             read_vscode_theme(r##"{"type": "dark", "colors": {"terminal.ansiRed": "#ff5555"}}"##)
                 .expect("a theme");
-        assert_eq!(theme.colors.ansi[1], rgb(0xff5555).into());
+        assert_eq!(theme.colors.ansi[1], rgb_to_hsla(rgb(0xff5555)));
         assert_eq!(theme.colors.ansi[2], Palette::dark(false).ansi[2]);
     }
 
@@ -338,7 +338,7 @@ mod tests {
             ]}"##,
         )
         .expect("a theme");
-        assert_eq!(theme.colors.syntax.keyword, rgb(0x222222).into());
+        assert_eq!(theme.colors.syntax.keyword, rgb_to_hsla(rgb(0x222222)));
     }
 
     #[test]
@@ -346,9 +346,9 @@ mod tests {
         let theme = read_vscode_theme(THEME).expect("a theme");
         assert_eq!(theme.name.as_deref(), Some("Harbor"));
         assert_eq!(theme.mode, Mode::Dark);
-        assert_eq!(theme.colors.bg, rgb(0x101820).into());
-        assert_eq!(theme.colors.syntax.keyword, rgb(0xc792ea).into());
-        assert_eq!(theme.colors.syntax.string, rgb(0x9ece6a).into());
+        assert_eq!(theme.colors.bg, rgb_to_hsla(rgb(0x101820)));
+        assert_eq!(theme.colors.syntax.keyword, rgb_to_hsla(rgb(0xc792ea)));
+        assert_eq!(theme.colors.syntax.string, rgb_to_hsla(rgb(0x9ece6a)));
         for named in ["bg", "fg", "focus", "comment", "keyword", "string"] {
             assert!(theme.named.contains(&named), "{named} named");
         }

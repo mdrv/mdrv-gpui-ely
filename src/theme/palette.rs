@@ -1,6 +1,6 @@
 use gpui::ColorExt as _;
-use gpui::{rgb, rgba, Hsla, Rgba};
-use palette::{rgb::Rgb, IntoColor};
+use gpui::{Hsla, Rgba, rgb, rgba};
+use palette::{IntoColor, rgb::Rgb};
 
 use super::Mode;
 
@@ -327,9 +327,9 @@ mod tests {
     #[test]
     fn mix_hits_both_ends_and_the_middle() {
         let (black, white) = (c(0x000000), c(0xffffff));
-        assert_eq!(black.mix(&white, 0.0).to_rgb().r, 0.0);
-        assert_eq!(black.mix(&white, 1.0).to_rgb().r, 1.0);
-        assert!((black.mix(&white, 0.5).to_rgb().g - 0.5).abs() < 1e-4);
+        assert_eq!(black.mix(&white, 0.0).to_rgb().red, 0.0);
+        assert_eq!(black.mix(&white, 1.0).to_rgb().red, 1.0);
+        assert!((black.mix(&white, 0.5).to_rgb().green - 0.5).abs() < 1e-4);
     }
 
     #[test]
@@ -355,8 +355,8 @@ mod tests {
     #[test]
     fn high_contrast_strengthens_borders() {
         let (base, hc) = (Palette::light(false), Palette::light(true));
-        assert!(hc.border.l < base.border.l);
+        assert!(hc.border.lightness < base.border.lightness);
         let (base, hc) = (Palette::dark(false), Palette::dark(true));
-        assert!(hc.border.l > base.border.l);
+        assert!(hc.border.lightness > base.border.lightness);
     }
 }

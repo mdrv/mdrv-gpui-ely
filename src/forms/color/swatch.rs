@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    canvas, div, fill, point, prelude::*, rems, size, App, Bounds, Corners, ElementId, Hsla,
-    InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Rems, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    App, Bounds, Corners, ElementId, Hsla, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, Pixels, Rems, RenderOnce, SharedString, StatefulInteractiveElement, Styled,
+    Window, canvas, div, fill, point, prelude::*, rems, size,
 };
 
 use super::super::options::Run;
@@ -226,7 +226,7 @@ impl RenderOnce for ColorPalette {
 
 #[cfg(test)]
 mod tests {
-    use gpui::{point, px, size, Bounds};
+    use gpui::{Bounds, point, px, size};
 
     use super::dark_cells;
 
