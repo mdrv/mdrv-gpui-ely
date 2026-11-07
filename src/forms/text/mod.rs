@@ -8,8 +8,8 @@ mod ime;
 use std::{ops::Range, rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, Context, EventEmitter, FocusHandle, Focusable, Pixels, Point, SharedString,
-    Subscription, Task, Window, WrappedLine,
+    App, Bounds, Context, EventEmitter, FocusHandle, Focusable, Pixels, Point, ShapedText,
+    SharedString, Subscription, Task, Window,
 };
 
 pub(crate) use actions::{Backspace, Down, Enter, Redo, Submit, Undo, Up, bind_keys};
@@ -36,7 +36,7 @@ pub(crate) type Fit = Rc<dyn Fn(&str, Range<usize>, &str) -> (String, usize)>;
 
 /// The last shaped text: one entry per hard line, with its display offset.
 pub(crate) struct Layout {
-    pub lines: Rc<[(usize, WrappedLine)]>,
+    pub lines: Rc<ShapedText>,
     pub bounds: Bounds<Pixels>,
     pub line_height: Pixels,
     /// The lines show the placeholder, not content.

@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
 use gpui::{
-    fill, point, relative, size, App, AvailableSpace, Bounds, ContentMask, DispatchPhase, Element,
-    ElementId, ElementInputHandler, Entity, FontStyle, GlobalElementId, Hsla, InspectorElementId,
-    IntoElement, LayoutId, MouseMoveEvent, Pixels, Point, SharedString, StrikethroughStyle, Style,
-    TextAlign, TextRun, UnderlineStyle, Window, WrappedLine,
+    App, AvailableSpace, Bounds, ContentMask, DispatchPhase, Element, ElementId,
+    ElementInputHandler, Entity, FontStyle, GlobalElementId, Hsla, InspectorElementId, IntoElement,
+    LayoutId, MouseMoveEvent, Pixels, Point, ShapedText, SharedString, StrikethroughStyle, Style,
+    TextAlign, TextRun, UnderlineStyle, Window, fill, point, relative, size,
 };
 
 use super::{Highlight, Layout, TextInput};
@@ -29,7 +29,7 @@ impl IntoElement for TextElement {
 }
 
 pub(crate) struct Prepaint {
-    lines: Rc<[(usize, WrappedLine)]>,
+    shaped: Rc<ShapedText>,
     selections: Vec<Bounds<Pixels>>,
     caret: Option<Bounds<Pixels>>,
     selection_color: Hsla,
@@ -139,6 +139,7 @@ fn shown_runs(input: &TextInput, window: &Window, cx: &App) -> (String, bool, Ve
 }
 
 /// Starts of the hard lines in `text`.
+#[cfg(test)]
 fn line_starts(text: &str) -> Vec<usize> {
     std::iter::once(0)
         .chain(text.match_indices('\n').map(|(ix, _)| ix + 1))
@@ -189,10 +190,7 @@ impl Element for TextElement {
                     None,
                 )
                 .expect("text input shaping failed");
-            let rows: usize = lines
-                .iter()
-                .map(|line| line.wrap_boundaries().len() + 1)
-                .sum();
+            let rows: usize = lines.line_count();
             size(
                 width.unwrap_or_default(),
                 line_height * rows.clamp(min, max) as f32,
@@ -222,13 +220,12 @@ impl Element for TextElement {
             .text_system()
             .shape_text(text.clone(), font_size, &runs, wrap, None)
             .expect("text input shaping failed");
-        let lines: Rc<[(usize, WrappedLine)]> =
-            line_starts(&text).into_iter().zip(shaped).collect();
+        let shaped = Rc::new(shaped);
         let focused = input.focus().is_focused(window);
         let caret_on = input.caret_on();
         self.input.update(cx, |input, _| {
             input.layout = Some(Layout {
-                lines: lines.clone(),
+                lines: shaped.clone(),
                 bounds,
                 line_height,
                 placeholder,
@@ -238,7 +235,7 @@ impl Element for TextElement {
         let caret_at = input
             .position_for(input.display_offset(input.cursor()))
             .expect("caret offset lies inside the laid-out text");
-        let scroll = keep_in_view(input, &lines, caret_at, caret_width, bounds, line_height);
+        let scroll = keep_in_view(input, &shaped, caret_at, caret_width, bounds, line_height);
         let selection = input.selection();
         let selections = if placeholder || selection.is_empty() {
             Vec::new()
@@ -247,7 +244,7 @@ impl Element for TextElement {
                 input.display_offset(selection.start),
                 input.display_offset(selection.end),
             );
-            selection_rects(&lines, start, end, line_height, bounds.size.width)
+            selection_rects(&shaped, start, end, line_height, bounds.size.width)
                 .into_iter()
                 .map(|rect| Bounds::new(rect.origin + bounds.origin - scroll, rect.size))
                 .collect()
@@ -260,7 +257,7 @@ impl Element for TextElement {
         });
         self.input.update(cx, |input, _| input.scroll = scroll);
         Prepaint {
-            lines,
+            shaped,
             selections,
             caret,
             selection_color,
@@ -286,28 +283,29 @@ impl Element for TextElement {
             cx,
         );
         let line_height = window.line_height();
-        window.with_content_mask(Some(ContentMask { bounds }), |window| {
-            let mut origins = Vec::with_capacity(prepaint.lines.len());
-            let mut top = Pixels::ZERO;
-            for (_, line) in prepaint.lines.iter() {
-                origins.push(bounds.origin - scroll + point(Pixels::ZERO, top));
-                top += line.size(line_height).height;
-            }
-            for ((_, line), origin) in prepaint.lines.iter().zip(&origins) {
-                line.paint_background(*origin, line_height, TextAlign::Left, None, window, cx)
+        window.with_content_mask(
+            Some(ContentMask {
+                bounds,
+                ..Default::default()
+            }),
+            |window| {
+                let origin = bounds.origin - scroll;
+                prepaint
+                    .shaped
+                    .paint_background(origin, line_height, TextAlign::Left, None, window, cx)
                     .expect("text input wash paint failed");
-            }
-            for rect in prepaint.selections.drain(..) {
-                window.paint_quad(fill(rect, prepaint.selection_color));
-            }
-            for ((_, line), origin) in prepaint.lines.iter().zip(&origins) {
-                line.paint(*origin, line_height, TextAlign::Left, None, window, cx)
+                for rect in prepaint.selections.drain(..) {
+                    window.paint_quad(fill(rect, prepaint.selection_color));
+                }
+                prepaint
+                    .shaped
+                    .paint(origin, line_height, TextAlign::Left, None, window, cx)
                     .expect("text input paint failed");
-            }
-            if let Some(caret) = prepaint.caret.take() {
-                window.paint_quad(fill(caret, prepaint.caret_color));
-            }
-        });
+                if let Some(caret) = prepaint.caret.take() {
+                    window.paint_quad(fill(caret, prepaint.caret_color));
+                }
+            },
+        );
         if selecting {
             let input = self.input.clone();
             window.on_mouse_event(move |event: &MouseMoveEvent, phase, _, cx| {
@@ -325,7 +323,7 @@ impl Element for TextElement {
 /// Scroll that keeps the caret inside the box, clamped to the text.
 fn keep_in_view(
     input: &TextInput,
-    lines: &[(usize, WrappedLine)],
+    shaped: &ShapedText,
     caret: Point<Pixels>,
     caret_width: Pixels,
     bounds: Bounds<Pixels>,
@@ -333,9 +331,7 @@ fn keep_in_view(
 ) -> Point<Pixels> {
     let mut scroll = input.scroll;
     if input.is_multi_line() {
-        let content = lines.iter().fold(Pixels::ZERO, |sum, (_, line)| {
-            sum + line.size(line_height).height
-        });
+        let content = shaped.size(line_height).height;
         let view = bounds.size.height;
         if caret.y < scroll.y {
             scroll.y = caret.y;
@@ -347,7 +343,7 @@ fn keep_in_view(
             .clamp(Pixels::ZERO, (content - view).max(Pixels::ZERO));
         scroll.x = Pixels::ZERO;
     } else {
-        let content = lines.first().map_or(Pixels::ZERO, |(_, line)| line.width()) + caret_width;
+        let content = shaped.width() + caret_width;
         let view = bounds.size.width;
         if caret.x < scroll.x {
             scroll.x = caret.x;
@@ -364,56 +360,55 @@ fn keep_in_view(
 
 /// Boxes covering display offsets `start..end`, relative to the text origin.
 pub(super) fn selection_rects(
-    lines: &[(usize, WrappedLine)],
+    shaped: &ShapedText,
     start: usize,
     end: usize,
     line_height: Pixels,
     width: Pixels,
 ) -> Vec<Bounds<Pixels>> {
     let mut rects = Vec::new();
-    let mut top = Pixels::ZERO;
-    for (line_start, line) in lines {
-        let line_end = line_start + line.len();
-        let (from, to) = (start.max(*line_start), end.min(line_end));
-        if from <= to && start <= line_end && end >= *line_start {
+    for line in shaped.visual_lines() {
+        let (line_start, line_end) = (line.text_range.start, line.text_range.end);
+        let (from, to) = (start.max(line_start), end.min(line_end));
+        if from <= to && start <= line_end && end >= line_start {
             let at = |ix: usize| {
-                line.position_for_index(ix - line_start, line_height)
+                shaped
+                    .visual_position_for_byte_index(ix, line_height)
                     .unwrap_or_default()
             };
             let (a, b) = (at(from), at(to));
             let edge = if end > line_end { width } else { b.x };
             if a.y == b.y {
                 rects.push(Bounds::from_corners(
-                    point(a.x, top + a.y),
-                    point(edge.max(a.x), top + a.y + line_height),
+                    point(a.x, a.y),
+                    point(edge.max(a.x), a.y + line_height),
                 ));
             } else {
                 rects.push(Bounds::from_corners(
-                    point(a.x, top + a.y),
-                    point(width, top + a.y + line_height),
+                    point(a.x, a.y),
+                    point(width, a.y + line_height),
                 ));
                 let mut y = a.y + line_height;
                 while y < b.y {
                     rects.push(Bounds::from_corners(
-                        point(Pixels::ZERO, top + y),
-                        point(width, top + y + line_height),
+                        point(Pixels::ZERO, y),
+                        point(width, y + line_height),
                     ));
                     y += line_height;
                 }
                 rects.push(Bounds::from_corners(
-                    point(Pixels::ZERO, top + b.y),
-                    point(edge, top + b.y + line_height),
+                    point(Pixels::ZERO, b.y),
+                    point(edge, b.y + line_height),
                 ));
             }
         }
-        top += line.size(line_height).height;
     }
     rects
 }
 
 #[cfg(test)]
 mod tests {
-    use gpui::{font, hsla, px, FontWeight};
+    use gpui::{FontWeight, font, hsla, px};
 
     use super::*;
 
@@ -426,6 +421,7 @@ mod tests {
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
         let bold = Highlight {
             weight: Some(FontWeight::SEMIBOLD),

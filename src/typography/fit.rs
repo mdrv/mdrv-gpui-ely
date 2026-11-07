@@ -1,7 +1,7 @@
 use gpui::{
-    canvas, div, point, prelude::*, relative, transparent_black, App, Div, ElementId,
-    InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce, ShapedLine, SharedString,
-    StatefulInteractiveElement, Styled, TextAlign, TextRun, Window,
+    App, Div, ElementId, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
+    ShapedLine, SharedString, StatefulInteractiveElement, Styled, TextAlign, TextRun, Window,
+    canvas, div, point, prelude::*, relative, transparent_black,
 };
 
 use crate::{
@@ -35,7 +35,7 @@ pub(crate) fn text_width(text: &str, size: Pixels, window: &Window) -> Pixels {
     };
     window
         .text_system()
-        .shape_line(SharedString::from(text.to_string()), size, &[run], None)
+        .shape_line(SharedString::from(text.to_string()), size, &[run])
         .width
 }
 
@@ -45,7 +45,7 @@ fn shape(text: &str, window: &mut Window) -> ShapedLine {
     let size = style.font_size.to_pixels(window.rem_size());
     window
         .text_system()
-        .shape_line(SharedString::from(text.to_string()), size, &[run], None)
+        .shape_line(SharedString::from(text.to_string()), size, &[run])
 }
 
 fn width_of(text: &str, window: &mut Window) -> Pixels {
@@ -106,9 +106,9 @@ fn fit_end(text: &str, width: Pixels, window: &mut Window) -> String {
 fn offset(align: TextAlign, free: Pixels) -> Pixels {
     let free = free.max(Pixels::ZERO);
     match align {
-        TextAlign::Left => Pixels::ZERO,
+        TextAlign::Left | TextAlign::Start => Pixels::ZERO,
         TextAlign::Center => free / 2.,
-        TextAlign::Right => free,
+        TextAlign::Right | TextAlign::End => free,
     }
 }
 
@@ -243,7 +243,7 @@ impl RenderOnce for EllipsisTooltip {
 
 #[cfg(test)]
 mod tests {
-    use gpui::{px, TextAlign};
+    use gpui::{TextAlign, px};
 
     use super::{elide, offset};
 

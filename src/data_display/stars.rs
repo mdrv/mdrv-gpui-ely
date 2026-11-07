@@ -96,7 +96,10 @@ impl RenderOnce for Stars {
                                 size(bounds.size.width * filled, bounds.size.height),
                             );
                             window.with_content_mask(
-                                Some(ContentMask { bounds: part }),
+                                Some(ContentMask {
+                                    bounds: part,
+                                    ..Default::default()
+                                }),
                                 |window| {
                                     window.paint_path(star(bounds, true), on);
                                     window.paint_path(star(bounds, false), on);

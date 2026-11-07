@@ -10,7 +10,7 @@ name = "ely_examples"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-gpui = { package = "mdrv-gpui", path = "/g/mdrv-gpui/crates/gpui", default-features = false }
+gpui = { package = "mdrv-gpui", path = "/g/mdrv-gpui/crates/gpui", default-features = false, features = ["font-kit"] }
 gpui-mobile = { path = "/g/mdrv-gpui-mobile" }
 log = "0.4"
 ely-gpui-component = { path = ".." }

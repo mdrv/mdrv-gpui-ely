@@ -1,10 +1,15 @@
 use std::rc::Rc;
 
 use anyhow::Context as _;
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+use gpui::LinuxWindowBackground;
+#[cfg(target_os = "macos")]
+use gpui::MacosWindowBackground;
+#[cfg(target_os = "windows")]
+use gpui::WindowsWindowBackground;
 use gpui::{
     App, AppContext, Bounds, Context, IntoElement, ParentElement, Render, SharedString, Styled,
-    Subscription, Window, WindowBackgroundAppearance, WindowBounds, WindowHandle, WindowKind,
-    WindowOptions, div, point, size,
+    Subscription, Window, WindowBounds, WindowHandle, WindowKind, WindowOptions, div, point, size,
 };
 
 use super::kinds::{Search, SearchPalette};
@@ -45,7 +50,12 @@ impl QuickLauncher {
             kind: WindowKind::PopUp,
             is_resizable: false,
             is_minimizable: false,
-            window_background: WindowBackgroundAppearance::Transparent,
+            #[cfg(target_os = "macos")]
+            macos_window_background: MacosWindowBackground::Transparent,
+            #[cfg(target_os = "windows")]
+            windows_window_background: WindowsWindowBackground::Transparent,
+            #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+            linux_window_background: LinuxWindowBackground::Transparent,
             ..Default::default()
         };
         let (search, on_open): (Search, OnValue) = (Rc::new(search), Rc::new(on_open));

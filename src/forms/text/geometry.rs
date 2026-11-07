@@ -13,10 +13,7 @@ impl TextInput {
     /// An offset's box in the window, from the last layout; later offsets clamp to its end.
     pub fn bounds_for(&self, offset: usize) -> Option<Bounds<Pixels>> {
         let layout = self.layout.as_ref()?;
-        let laid = layout
-            .lines
-            .last()
-            .map_or(0, |(start, line)| start + line.len());
+        let laid = layout.lines.len();
         let at = self.position_for(self.display_offset(offset).min(laid))?;
         Some(Bounds::new(
             layout.bounds.origin + at - self.scroll,
@@ -32,10 +29,7 @@ impl TextInput {
         if layout.placeholder {
             return Vec::new();
         }
-        let laid = layout
-            .lines
-            .last()
-            .map_or(0, |(start, line)| start + line.len());
+        let laid = layout.lines.len();
         let (start, end) = (
             self.display_offset(range.start).min(laid),
             self.display_offset(range.end).min(laid),
@@ -58,15 +52,9 @@ impl TextInput {
         if layout.placeholder {
             return Some(Point::default());
         }
-        let mut top = Pixels::ZERO;
-        for (start, line) in layout.lines.iter() {
-            if display <= start + line.len() {
-                let at = line.position_for_index(display - start, layout.line_height)?;
-                return Some(gpui::point(at.x, at.y + top));
-            }
-            top += line.size(layout.line_height).height;
-        }
-        None
+        layout
+            .lines
+            .visual_position_for_byte_index(display, layout.line_height)
     }
 
     /// The content offset nearest a window position.
@@ -81,18 +69,12 @@ impl TextInput {
         if local.y < Pixels::ZERO {
             return 0;
         }
-        let mut top = Pixels::ZERO;
-        for (start, line) in layout.lines.iter() {
-            let height = line.size(layout.line_height).height;
-            if local.y < top + height {
-                let inside = gpui::point(local.x.max(Pixels::ZERO), local.y - top);
-                let index = match line.closest_index_for_position(inside, layout.line_height) {
-                    Ok(index) | Err(index) => index,
-                };
-                return self.content_offset(start + index.min(line.len()));
-            }
-            top += height;
-        }
-        self.text.len()
+        let index = match layout
+            .lines
+            .closest_byte_index_for_pixel_point(local, layout.line_height)
+        {
+            Ok(index) | Err(index) => index,
+        };
+        self.content_offset(index.min(layout.lines.len()))
     }
 }
